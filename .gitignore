@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data — don't commit raw or processed data
+data/*
+!data/.gitkeep
+predictions/
+models/*.lgb
+models/*/model.lgb
+
+# FastF1 cache
+cache/
+
+# Metrics plots — committed for portfolio visibility
+# metrics/*.png
+
+# Secrets / env
+.env
+*.env
+
+# OS
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json

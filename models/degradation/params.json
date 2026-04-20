@@ -1,0 +1,33 @@
+{
+  "baseline_mae": 0.4908655950748686,
+  "baseline_rmse": 0.6727548939093039,
+  "baseline_r2": 0.08616751712076309,
+  "baseline_features": [
+    "stint_lap_number",
+    "compound_encoded",
+    "TrackTemp"
+  ],
+  "val": {
+    "mae": 0.1383142870921148,
+    "rmse": 0.23761905844152167,
+    "r2": 0.8859972306621778
+  },
+  "test": {
+    "mae": 0.26776989196694234,
+    "rmse": 0.48618407631267563,
+    "r2": 0.7460598403154752
+  },
+  "improvement_over_baseline_pct": 45.45,
+  "best_optuna_params": {
+    "num_leaves": 34,
+    "learning_rate": 0.1320471724468367,
+    "min_child_samples": 73,
+    "feature_fraction": 0.9767175061105704,
+    "bagging_fraction": 0.7797440495773899,
+    "bagging_freq": 5,
+    "reg_alpha": 0.013097635982807854,
+    "reg_lambda": 0.005387239575214755
+  },
+  "n_features": 21,
+  "train_rows": 533
+}
