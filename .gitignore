@@ -16,6 +16,9 @@ models/*/model.lgb
 # FastF1 cache
 cache/
 
+# Nested git repo with FastF1 cache and duplicate artefacts
+f1/
+
 # Metrics plots — committed for portfolio visibility
 # metrics/*.png
 
