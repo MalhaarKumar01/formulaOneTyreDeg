@@ -4,11 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>F1 TYRE DEG — DASHBOARD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg:      #0a0a0a;
     --surface: #111111;
+    --surface2:#161616;
     --border:  #2a2a2a;
     --accent:  #e8002d;
     --accent2: #ff6b00;
@@ -17,7 +20,9 @@
     --green:   #00c853;
     --amber:   #ff6d00;
     --red:     #e8002d;
+    --blue:    #448aff;
     --mono:    'Courier New', Courier, monospace;
+    --sans:    'Inter', system-ui, sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,7 +30,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: 13px;
     min-height: 100vh;
   }
@@ -33,28 +38,38 @@
   /* ── HEADER ── */
   header {
     border-bottom: 3px solid var(--accent);
-    padding: 16px 24px;
+    padding: 14px 24px;
     display: flex;
-    align-items: baseline;
-    gap: 24px;
+    align-items: center;
+    gap: 20px;
     background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
   header h1 {
-    font-size: 22px;
+    font-family: var(--mono);
+    font-size: 20px;
     letter-spacing: 6px;
     text-transform: uppercase;
     color: var(--text);
+    flex-shrink: 0;
   }
   header h1 span { color: var(--accent); }
-  #health-badge {
-    font-size: 11px;
+  .header-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
     letter-spacing: 2px;
     color: var(--muted);
     border: 1px solid var(--border);
     padding: 3px 8px;
+    white-space: nowrap;
   }
-  #health-badge.ok { color: var(--green); border-color: var(--green); }
-  #health-badge.err { color: var(--red); border-color: var(--red); }
+  .badge.ok  { color: var(--green); border-color: var(--green); }
+  .badge.err { color: var(--red);   border-color: var(--red); }
+  .badge.lstm-ok   { color: var(--blue);  border-color: var(--blue); }
+  .badge.lstm-none { color: var(--muted); border-color: var(--border); }
 
   /* ── TABS ── */
   nav {
@@ -62,6 +77,7 @@
     border-bottom: 2px solid var(--border);
     background: var(--surface);
     padding: 0 24px;
+    gap: 2px;
   }
   nav button {
     background: none;
@@ -70,10 +86,10 @@
     color: var(--muted);
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 3px;
     margin-bottom: -2px;
-    padding: 12px 20px;
+    padding: 12px 18px;
     text-transform: uppercase;
     transition: color .15s, border-color .15s;
   }
@@ -82,13 +98,13 @@
 
   /* ── MAIN ── */
   main { padding: 24px; max-width: 1400px; }
-
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
   /* ── SECTION LABEL ── */
   .section-label {
     color: var(--accent);
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 4px;
     text-transform: uppercase;
@@ -100,7 +116,7 @@
   /* ── METRIC CARDS ── */
   .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
     gap: 2px;
     margin-bottom: 32px;
   }
@@ -115,30 +131,90 @@
     content: '';
     position: absolute;
     top: 0; left: 0;
-    width: 3px;
-    height: 100%;
+    width: 3px; height: 100%;
     background: var(--accent);
   }
   .card.accent2::before { background: var(--accent2); }
   .card.green::before   { background: var(--green); }
+  .card.blue::before    { background: var(--blue); }
   .card-label {
     color: var(--muted);
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 10px;
+    font-family: var(--mono);
   }
   .card-value {
-    font-size: 28px;
-    font-weight: bold;
+    font-size: 32px;
+    font-weight: 700;
     color: var(--text);
-    letter-spacing: 1px;
+    letter-spacing: -0.5px;
+    line-height: 1;
   }
   .card-unit {
     font-size: 11px;
     color: var(--muted);
-    margin-top: 4px;
+    margin-top: 6px;
+    font-family: var(--mono);
   }
+
+  /* ── MODEL COMPARISON ── */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 32px;
+  }
+  .model-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    position: relative;
+  }
+  .model-col.winner { border-color: var(--accent); }
+  .model-col.winner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--accent);
+  }
+  .model-col.not-trained { opacity: 0.5; }
+  .model-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .winner-badge {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 2px 6px;
+  }
+  .model-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+  .model-stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .stat-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .stat-val.muted { color: var(--muted); font-size: 14px; }
 
   /* ── PLOTS GRID ── */
   .plots-grid {
@@ -153,6 +229,7 @@
   }
   .plot-title {
     color: var(--muted);
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -163,7 +240,6 @@
     display: block;
     filter: brightness(.95) contrast(1.05);
   }
-  .plot-box img.loading { opacity: 0.3; }
 
   /* ── PREDICT FORM ── */
   .predict-layout {
@@ -184,6 +260,7 @@
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label {
     color: var(--muted);
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -208,17 +285,24 @@
     color: #fff;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 3px;
     margin-top: 16px;
-    padding: 12px 24px;
+    padding: 11px 24px;
     text-transform: uppercase;
     width: 100%;
     transition: background .15s;
   }
   .btn:hover { background: #c0001f; }
-  .btn:disabled { background: var(--border); cursor: not-allowed; }
+  .btn:disabled { background: var(--border); cursor: not-allowed; color: var(--muted); }
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+  }
+  .btn.secondary:hover { background: var(--blue); color: #fff; }
+  .btn.secondary:disabled { background: transparent; border-color: var(--border); color: var(--muted); }
 
   /* result panel */
   .result-box {
@@ -231,17 +315,18 @@
     justify-content: center;
     min-height: 220px;
   }
-  .result-empty { color: var(--muted); letter-spacing: 2px; text-align: center; }
+  .result-empty { color: var(--muted); letter-spacing: 2px; text-align: center; font-family: var(--mono); }
   .result-delta {
     font-size: 64px;
-    font-weight: bold;
-    letter-spacing: 2px;
+    font-weight: 700;
+    letter-spacing: -1px;
     line-height: 1;
   }
   .result-delta.green { color: var(--green); }
   .result-delta.amber { color: var(--amber); }
   .result-delta.red   { color: var(--red); }
   .result-label {
+    font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 3px;
     color: var(--muted);
@@ -249,6 +334,7 @@
     margin-top: 12px;
   }
   .result-severity {
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 4px;
     text-transform: uppercase;
@@ -259,6 +345,76 @@
   .result-severity.green { color: var(--green); border-color: var(--green); }
   .result-severity.amber { color: var(--amber); border-color: var(--amber); }
   .result-severity.red   { color: var(--red);   border-color: var(--red); }
+
+  /* ── STRATEGY ── */
+  .strategy-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    align-items: flex-end;
+  }
+  .strategy-controls .field { min-width: 130px; flex: 1; }
+  .strategy-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+  }
+  .strategy-btn-group .btn { margin-top: 0; }
+
+  .strategy-chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 20px;
+    position: relative;
+    height: 400px;
+  }
+  #strategy-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 3px;
+    font-size: 11px;
+    background: var(--surface);
+  }
+  .strategy-result {
+    margin-top: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .strategy-badge {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border: 2px solid;
+  }
+  .strategy-badge.stay  { color: var(--green); border-color: var(--green); }
+  .strategy-badge.soon  { color: var(--amber); border-color: var(--amber); }
+  .strategy-badge.now   { color: var(--red);   border-color: var(--red); }
+  .strategy-summary {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+    flex: 1;
+  }
+  .strategy-summary b { color: var(--text); }
 
   /* ── EXPLORER ── */
   .explorer-controls {
@@ -271,15 +427,8 @@
     padding: 16px;
   }
   .explorer-controls .field { min-width: 160px; }
-  .explorer-controls .btn {
-    align-self: flex-end;
-    margin-top: 0;
-    width: auto;
-    padding: 9px 20px;
-    flex-shrink: 0;
-  }
+  .explorer-controls .btn { align-self: flex-end; margin-top: 0; width: auto; padding: 9px 20px; flex-shrink: 0; }
 
-  /* chart controls */
   .chart-controls {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -292,6 +441,7 @@
   }
   .chart-controls label {
     color: var(--muted);
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -306,12 +456,7 @@
     padding: 4px 8px;
     outline: none;
   }
-  .chart-controls input[type=range] {
-    border: none;
-    accent-color: var(--accent);
-    width: 100px;
-  }
-  #point-size-val { color: var(--text); min-width: 14px; display: inline-block; }
+  .chart-controls input[type=range] { border: none; accent-color: var(--accent); width: 100px; }
 
   .chart-box {
     background: var(--surface);
@@ -328,6 +473,7 @@
     align-items: center;
     justify-content: center;
     color: var(--muted);
+    font-family: var(--mono);
     letter-spacing: 3px;
     font-size: 11px;
     background: var(--surface);
@@ -342,14 +488,12 @@
     max-height: 340px;
     overflow-y: auto;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+  table { width: 100%; border-collapse: collapse; }
   thead th {
-    background: #1a1a1a;
+    background: var(--surface2);
     border-bottom: 2px solid var(--accent);
     color: var(--muted);
+    font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 2px;
     padding: 10px 12px;
@@ -360,20 +504,14 @@
     z-index: 1;
   }
   tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:hover { background: #1a1a1a; }
+  tbody tr:hover { background: var(--surface2); }
   tbody td { padding: 8px 12px; color: var(--text); }
-  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
   tbody td.pos { color: var(--green); }
   tbody td.neg { color: var(--accent); }
 
   /* compound badges */
-  .cpd {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    padding: 2px 6px;
-  }
+  .cpd { display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 6px; }
   .cpd-SOFT         { color: #e8002d; border: 1px solid #e8002d; }
   .cpd-MEDIUM       { color: #ffd600; border: 1px solid #ffd600; }
   .cpd-HARD         { color: #fff;    border: 1px solid #fff; }
@@ -391,14 +529,18 @@
 
 <header>
   <h1>F1 <span>TYRE</span> DEG</h1>
-  <span id="health-badge">CONNECTING...</span>
+  <div class="header-badges">
+    <span class="badge" id="health-badge">CONNECTING...</span>
+    <span class="badge lstm-none" id="lstm-badge">LSTM: NOT TRAINED</span>
+  </div>
 </header>
 
 <nav>
-  <button class="active" onclick="showTab('metrics')">METRICS</button>
-  <button onclick="showTab('plots')">PLOTS</button>
-  <button onclick="showTab('predict')">PREDICT</button>
-  <button onclick="showTab('explorer')">EXPLORER</button>
+  <button class="active" data-tab="metrics">METRICS</button>
+  <button data-tab="plots">PLOTS</button>
+  <button data-tab="predict">PREDICT</button>
+  <button data-tab="strategy">STRATEGY</button>
+  <button data-tab="explorer">EXPLORER</button>
 </nav>
 
 <main>
@@ -410,7 +552,13 @@
       <div class="card"><div class="card-label">LOADING</div><div class="card-value">—</div></div>
     </div>
 
-    <div class="section-label" style="margin-top:8px">BEST OPTUNA PARAMS</div>
+    <div class="section-label">MODEL COMPARISON</div>
+    <div class="comparison-grid" id="model-comparison">
+      <div class="model-col"><div class="model-name">LOADING...</div></div>
+      <div class="model-col"><div class="model-name">LOADING...</div></div>
+    </div>
+
+    <div class="section-label">BEST OPTUNA PARAMS — LIGHTGBM</div>
     <div class="cards" id="param-cards">
       <div class="card"><div class="card-label">LOADING</div><div class="card-value">—</div></div>
     </div>
@@ -422,19 +570,19 @@
     <div class="plots-grid">
       <div class="plot-box">
         <div class="plot-title">SHAP FEATURE IMPORTANCE</div>
-        <img id="img-shap" src="/plots/shap_importance" alt="SHAP importance" loading="lazy"/>
+        <img src="/plots/shap_importance" alt="SHAP importance" loading="lazy"/>
       </div>
       <div class="plot-box">
         <div class="plot-title">RESIDUALS BY COMPOUND</div>
-        <img id="img-residuals" src="/plots/residuals_by_compound" alt="Residuals" loading="lazy"/>
+        <img src="/plots/residuals_by_compound" alt="Residuals" loading="lazy"/>
       </div>
       <div class="plot-box">
         <div class="plot-title">PREDICTED VS ACTUAL</div>
-        <img id="img-scatter" src="/plots/predicted_vs_actual" alt="Predicted vs actual" loading="lazy"/>
+        <img src="/plots/predicted_vs_actual" alt="Predicted vs actual" loading="lazy"/>
       </div>
       <div class="plot-box">
         <div class="plot-title">SHAP WATERFALL — SAMPLE PREDICTION</div>
-        <img id="img-waterfall" src="/plots/shap_waterfall_sample" alt="SHAP waterfall" loading="lazy"/>
+        <img src="/plots/shap_waterfall_sample" alt="SHAP waterfall" loading="lazy"/>
       </div>
     </div>
   </div>
@@ -455,65 +603,86 @@
               <option value="WET">WET</option>
             </select>
           </div>
-          <div class="field">
-            <label>Stint Lap</label>
-            <input type="number" id="p-stint-lap" value="10" min="1" max="60"/>
-          </div>
-          <div class="field">
-            <label>Stint #</label>
-            <input type="number" id="p-stint" value="2" min="1" max="5"/>
-          </div>
-          <div class="field">
-            <label>Track Temp (°C)</label>
-            <input type="number" id="p-track-temp" value="42" min="10" max="70"/>
-          </div>
-          <div class="field">
-            <label>Air Temp (°C)</label>
-            <input type="number" id="p-air-temp" value="28" min="10" max="50"/>
-          </div>
-          <div class="field">
-            <label>Fuel Load (kg)</label>
-            <input type="number" id="p-fuel" value="55" min="0" max="110" step="0.5"/>
-          </div>
-          <div class="field">
-            <label>Throttle % (avg)</label>
-            <input type="number" id="p-throttle" value="62" min="0" max="100"/>
-          </div>
-          <div class="field">
-            <label>Braking %</label>
-            <input type="number" id="p-braking" value="12" min="0" max="40"/>
-          </div>
-          <div class="field">
-            <label>Max Speed (kph)</label>
-            <input type="number" id="p-speed" value="315" min="200" max="380"/>
-          </div>
-          <div class="field">
-            <label>DRS Active %</label>
-            <input type="number" id="p-drs" value="18" min="0" max="50"/>
-          </div>
-          <div class="field">
-            <label>Avg RPM</label>
-            <input type="number" id="p-rpm" value="11200" min="6000" max="15000" step="100"/>
-          </div>
-          <div class="field">
-            <label>Deg Rate (last 3)</label>
-            <input type="number" id="p-deg-rate" value="0.05" min="-1" max="2" step="0.01"/>
-          </div>
+          <div class="field"><label>Stint Lap</label><input type="number" id="p-stint-lap" value="10" min="1" max="60"/></div>
+          <div class="field"><label>Stint #</label><input type="number" id="p-stint" value="2" min="1" max="5"/></div>
+          <div class="field"><label>Track Temp (°C)</label><input type="number" id="p-track-temp" value="42" min="10" max="70"/></div>
+          <div class="field"><label>Air Temp (°C)</label><input type="number" id="p-air-temp" value="28" min="10" max="50"/></div>
+          <div class="field"><label>Fuel Load (kg)</label><input type="number" id="p-fuel" value="55" min="0" max="110" step="0.5"/></div>
+          <div class="field"><label>Throttle % (avg)</label><input type="number" id="p-throttle" value="62" min="0" max="100"/></div>
+          <div class="field"><label>Braking %</label><input type="number" id="p-braking" value="12" min="0" max="40"/></div>
+          <div class="field"><label>Max Speed (kph)</label><input type="number" id="p-speed" value="315" min="200" max="380"/></div>
+          <div class="field"><label>DRS Active %</label><input type="number" id="p-drs" value="18" min="0" max="50"/></div>
+          <div class="field"><label>Avg RPM</label><input type="number" id="p-rpm" value="11200" min="6000" max="15000" step="100"/></div>
+          <div class="field"><label>Deg Rate (last 3)</label><input type="number" id="p-deg-rate" value="0.05" min="-1" max="2" step="0.01"/></div>
         </div>
         <button class="btn" id="predict-btn" onclick="runPredict()">▶ PREDICT</button>
       </div>
-
       <div class="result-box" id="result-box">
         <div class="result-empty" id="result-empty">AWAITING INPUT</div>
         <div id="result-content" style="display:none; text-align:center;">
           <div class="result-delta" id="result-delta"></div>
           <div class="result-label">PREDICTED LAP DELTA (s)</div>
           <div class="result-severity" id="result-severity"></div>
-          <div style="margin-top:24px;color:var(--muted);font-size:11px;letter-spacing:1px;">
+          <div style="margin-top:24px;color:var(--muted);font-size:11px;letter-spacing:1px;font-family:var(--mono);">
             positive = slower than stint lap 1
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: STRATEGY ── -->
+  <div id="tab-strategy" class="tab-panel">
+    <div class="section-label">PIT STRATEGY CALCULATOR</div>
+
+    <div class="strategy-controls">
+      <div class="field">
+        <label>Compound</label>
+        <select id="s-compound">
+          <option value="SOFT">SOFT</option>
+          <option value="MEDIUM" selected>MEDIUM</option>
+          <option value="HARD">HARD</option>
+          <option value="INTERMEDIATE">INTERMEDIATE</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Track Temp (°C)</label>
+        <input type="number" id="s-track-temp" value="42" min="10" max="70"/>
+      </div>
+      <div class="field">
+        <label>Air Temp (°C)</label>
+        <input type="number" id="s-air-temp" value="28" min="10" max="50"/>
+      </div>
+      <div class="field">
+        <label>Fuel Load (kg)</label>
+        <input type="number" id="s-fuel" value="70" min="0" max="110" step="0.5"/>
+      </div>
+      <div class="field">
+        <label>Stint #</label>
+        <input type="number" id="s-stint" value="2" min="1" max="5"/>
+      </div>
+      <div class="field">
+        <label>Stint Length (laps)</label>
+        <input type="number" id="s-stint-len" value="30" min="5" max="60"/>
+      </div>
+      <div class="field">
+        <label>Pit Time Loss (s)</label>
+        <input type="number" id="s-pit-loss" value="22" min="15" max="35" step="0.5"/>
+      </div>
+      <div class="strategy-btn-group">
+        <button class="btn" id="gen-curve-btn" onclick="generateCurve()">▶ GENERATE CURVE</button>
+        <button class="btn secondary" id="lstm-curve-btn" onclick="generateLSTMCurve()" disabled>◈ LSTM FORECAST</button>
+      </div>
+    </div>
+
+    <div class="strategy-chart-box">
+      <div id="strategy-loading">CONFIGURE CONDITIONS AND CLICK GENERATE CURVE</div>
+      <canvas id="strategy-chart" style="display:none;"></canvas>
+    </div>
+
+    <div class="strategy-result" id="strategy-result" style="display:none;">
+      <div class="strategy-badge" id="strategy-badge"></div>
+      <div class="strategy-summary" id="strategy-summary"></div>
     </div>
   </div>
 
@@ -595,62 +764,91 @@
 </main>
 
 <script>
-// ── COLOUR PALETTE for chart lines ──
+// ── CHART PALETTE ──
 const PALETTE = [
   '#e8002d','#ff6b00','#ffd600','#00c853','#448aff',
   '#aa00ff','#00bcd4','#ff4081','#69f0ae','#ffab40',
   '#b0bec5','#ef9a9a','#80cbc4','#ce93d8','#fff176',
 ];
 
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 300 },
+  plugins: {
+    legend: { labels: { color: '#888', font: { family: 'Courier New', size: 11 }, boxWidth: 12 } },
+    tooltip: {
+      backgroundColor: '#111', borderColor: '#333', borderWidth: 1,
+      titleColor: '#e8002d', bodyColor: '#ccc',
+      titleFont: { family: 'Courier New', size: 11 },
+      bodyFont:  { family: 'Courier New', size: 11 },
+    },
+  },
+  scales: {
+    x: {
+      type: 'linear',
+      grid: { color: '#1a1a1a' },
+      ticks: { color: '#555', font: { family: 'Courier New', size: 11 } },
+    },
+    y: {
+      grid: { color: '#1a1a1a' },
+      ticks: { color: '#555', font: { family: 'Courier New', size: 11 } },
+    },
+  },
+};
+
 // ── TAB SWITCHING ──
-function showTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.querySelectorAll('nav button').forEach(b => {
-    if (b.textContent.toLowerCase() === name.toUpperCase()) b.classList.add('active');
-  });
-  if (name === 'explorer' && !filtersLoaded) loadFilters();
-}
-document.querySelectorAll('nav button').forEach(b => {
-  b.addEventListener('click', () => {
-    const name = b.textContent.trim().toLowerCase();
-    showTab(name);
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const name = btn.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'explorer' && !filtersLoaded) loadFilters();
   });
 });
 
 // ── HEALTH ──
 async function checkHealth() {
-  const badge = document.getElementById('health-badge');
+  const badge     = document.getElementById('health-badge');
+  const lstmBadge = document.getElementById('lstm-badge');
   try {
-    const r = await fetch('/health');
-    if (!r.ok) throw new Error();
-    const d = await r.json();
+    const d = await fetch('/health').then(r => r.json());
     badge.textContent = `MODEL OK · MAE ${d.test_mae.toFixed(3)}s`;
-    badge.className = 'ok';
+    badge.className = 'badge ok';
+
+    if (d.lstm_available) {
+      const lstmMae = d.lstm_test_mae != null ? ` · MAE ${d.lstm_test_mae.toFixed(3)}s` : '';
+      lstmBadge.textContent = `LSTM READY${lstmMae}`;
+      lstmBadge.className = 'badge lstm-ok';
+      document.getElementById('lstm-curve-btn').disabled = false;
+    } else {
+      lstmBadge.textContent = 'LSTM: NOT TRAINED';
+      lstmBadge.className = 'badge lstm-none';
+    }
   } catch {
     badge.textContent = 'MODEL OFFLINE';
-    badge.className = 'err';
+    badge.className = 'badge err';
   }
 }
 checkHealth();
 
 // ── METRICS ──
 async function loadMetrics() {
-  const r = await fetch('/metrics');
-  const d = await r.json();
+  const d = await fetch('/metrics').then(r => r.json());
 
+  // Performance cards
   const cards = [
-    { label: 'TEST MAE',   value: d.test.mae.toFixed(3),  unit: 'seconds',     cls: '' },
-    { label: 'TEST RMSE',  value: d.test.rmse.toFixed(3), unit: 'seconds',     cls: '' },
-    { label: 'TEST R²',    value: d.test.r2.toFixed(3),   unit: 'explained var', cls: 'accent2' },
-    { label: 'VAL MAE',    value: d.val.mae.toFixed(3),   unit: 'seconds',     cls: '' },
-    { label: 'VAL R²',     value: d.val.r2.toFixed(3),    unit: 'explained var', cls: 'accent2' },
-    { label: 'BASELINE MAE', value: d.baseline_mae.toFixed(3), unit: 'seconds', cls: '' },
+    { label: 'TEST MAE',    value: d.test.mae.toFixed(3),  unit: 'seconds',      cls: '' },
+    { label: 'TEST RMSE',   value: d.test.rmse.toFixed(3), unit: 'seconds',      cls: '' },
+    { label: 'TEST R²',     value: d.test.r2.toFixed(3),   unit: 'explained var', cls: 'accent2' },
+    { label: 'VAL MAE',     value: d.val.mae.toFixed(3),   unit: 'seconds',      cls: '' },
+    { label: 'VAL R²',      value: d.val.r2.toFixed(3),    unit: 'explained var', cls: 'accent2' },
+    { label: 'BASELINE MAE',value: d.baseline_mae.toFixed(3), unit: 'seconds',   cls: '' },
     { label: 'IMPROVEMENT', value: '+' + d.improvement_over_baseline_pct.toFixed(1) + '%', unit: 'vs baseline', cls: 'green' },
-    { label: 'TRAIN ROWS', value: d.train_rows.toLocaleString(), unit: 'laps', cls: '' },
+    { label: 'TRAIN ROWS',  value: d.train_rows.toLocaleString(), unit: 'laps',  cls: '' },
   ];
-
   document.getElementById('metric-cards').innerHTML = cards.map(c => `
     <div class="card ${c.cls}">
       <div class="card-label">${c.label}</div>
@@ -659,20 +857,54 @@ async function loadMetrics() {
     </div>
   `).join('');
 
+  // Model comparison
+  const lgbm = d.test;
+  const lstm  = d.lstm?.test;
+  const lgbmWins = !lstm || lgbm.mae <= lstm.mae;
+  const lstmWins = lstm  && lstm.mae  < lgbm.mae;
+
+  const modelCol = (name, m, isWinner, dimmed) => `
+    <div class="model-col${isWinner ? ' winner' : ''}${dimmed ? ' not-trained' : ''}">
+      <div class="model-name">${name} ${isWinner ? '<span class="winner-badge">BEST</span>' : ''}</div>
+      ${m ? `
+      <div class="model-stats">
+        <div class="model-stat">
+          <span class="stat-label">TEST MAE</span>
+          <span class="stat-val">${m.mae.toFixed(3)}<span style="font-size:14px;font-weight:400;color:var(--muted)">s</span></span>
+        </div>
+        <div class="model-stat">
+          <span class="stat-label">TEST R²</span>
+          <span class="stat-val">${m.r2.toFixed(3)}</span>
+        </div>
+        <div class="model-stat">
+          <span class="stat-label">TEST RMSE</span>
+          <span class="stat-val">${m.rmse.toFixed(3)}<span style="font-size:14px;font-weight:400;color:var(--muted)">s</span></span>
+        </div>
+      </div>` : `
+      <div style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px;margin-top:8px;">
+        Not trained — run <code style="color:var(--accent)">make train-lstm</code>
+      </div>`}
+    </div>`;
+
+  document.getElementById('model-comparison').innerHTML =
+    modelCol('LIGHTGBM', lgbm, lgbmWins, false) +
+    modelCol('LSTM', lstm, lstmWins, !lstm);
+
+  // Optuna params
   const p = d.best_optuna_params;
   const params = [
-    { label: 'NUM LEAVES',        value: p.num_leaves },
-    { label: 'LEARNING RATE',     value: p.learning_rate.toFixed(4) },
-    { label: 'MIN CHILD SAMPLES', value: p.min_child_samples },
-    { label: 'FEATURE FRACTION',  value: p.feature_fraction.toFixed(3) },
-    { label: 'BAGGING FRACTION',  value: p.bagging_fraction.toFixed(3) },
-    { label: 'REG ALPHA',         value: p.reg_alpha.toFixed(4) },
-    { label: 'REG LAMBDA',        value: p.reg_lambda.toFixed(4) },
+    { label: 'NUM LEAVES',         value: p.num_leaves },
+    { label: 'LEARNING RATE',      value: p.learning_rate.toFixed(4) },
+    { label: 'MIN CHILD SAMPLES',  value: p.min_child_samples },
+    { label: 'FEATURE FRACTION',   value: p.feature_fraction.toFixed(3) },
+    { label: 'BAGGING FRACTION',   value: p.bagging_fraction.toFixed(3) },
+    { label: 'REG ALPHA',          value: p.reg_alpha.toFixed(4) },
+    { label: 'REG LAMBDA',         value: p.reg_lambda.toFixed(4) },
   ];
   document.getElementById('param-cards').innerHTML = params.map(c => `
     <div class="card">
       <div class="card-label">${c.label}</div>
-      <div class="card-value" style="font-size:20px">${c.value}</div>
+      <div class="card-value" style="font-size:22px">${c.value}</div>
     </div>
   `).join('');
 }
@@ -683,54 +915,275 @@ async function runPredict() {
   const btn = document.getElementById('predict-btn');
   btn.disabled = true;
   btn.textContent = 'COMPUTING...';
-
   const body = {
-    Compound:            document.getElementById('p-compound').value,
-    stint_lap_number:    +document.getElementById('p-stint-lap').value,
-    Stint:               +document.getElementById('p-stint').value,
-    TrackTemp:           +document.getElementById('p-track-temp').value,
-    AirTemp:             +document.getElementById('p-air-temp').value,
-    fuel_load_kg:        +document.getElementById('p-fuel').value,
-    avg_throttle_pct:    +document.getElementById('p-throttle').value,
-    braking_pct:         +document.getElementById('p-braking').value,
-    max_speed_kph:       +document.getElementById('p-speed').value,
-    drs_active_pct:      +document.getElementById('p-drs').value,
-    avg_rpm:             +document.getElementById('p-rpm').value,
-    deg_rate_last_3:     +document.getElementById('p-deg-rate').value,
-    full_throttle_pct:   +document.getElementById('p-throttle').value * 0.9,
-    avg_brake:           +document.getElementById('p-braking').value * 0.015,
-    track_evolution:     300,
-    deg_acceleration:    0.0,
-    sector_1_pct:        0.28,
-    sector_2_pct:        0.38,
-    sector_3_pct:        0.34,
+    Compound:          document.getElementById('p-compound').value,
+    stint_lap_number:  +document.getElementById('p-stint-lap').value,
+    Stint:             +document.getElementById('p-stint').value,
+    TrackTemp:         +document.getElementById('p-track-temp').value,
+    AirTemp:           +document.getElementById('p-air-temp').value,
+    fuel_load_kg:      +document.getElementById('p-fuel').value,
+    avg_throttle_pct:  +document.getElementById('p-throttle').value,
+    braking_pct:       +document.getElementById('p-braking').value,
+    max_speed_kph:     +document.getElementById('p-speed').value,
+    drs_active_pct:    +document.getElementById('p-drs').value,
+    avg_rpm:           +document.getElementById('p-rpm').value,
+    deg_rate_last_3:   +document.getElementById('p-deg-rate').value,
+    full_throttle_pct: +document.getElementById('p-throttle').value * 0.9,
+    avg_brake:         +document.getElementById('p-braking').value * 0.015,
+    track_evolution:   300,
+    deg_acceleration:  0.0,
+    sector_1_pct:      0.28,
+    sector_2_pct:      0.38,
+    sector_3_pct:      0.34,
   };
-
   try {
-    const r = await fetch('/predict', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.detail);
-
+    const d = await fetch('/predict', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
+    }).then(r => r.json());
     const delta = d.predicted_delta;
     const cls   = delta < 0.1 ? 'green' : delta < 0.3 ? 'amber' : 'red';
     const label = delta < 0.1 ? 'NOMINAL' : delta < 0.3 ? 'DEGRADING' : 'CLIFF RISK';
-
     document.getElementById('result-empty').style.display = 'none';
-    const rc = document.getElementById('result-content');
-    rc.style.display = 'block';
+    document.getElementById('result-content').style.display = 'block';
     document.getElementById('result-delta').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(3) + 's';
-    document.getElementById('result-delta').className = 'result-delta ' + cls;
+    document.getElementById('result-delta').className   = 'result-delta ' + cls;
     document.getElementById('result-severity').textContent = label;
-    document.getElementById('result-severity').className = 'result-severity ' + cls;
-  } catch (e) {
-    alert('Prediction error: ' + e.message);
-  } finally {
+    document.getElementById('result-severity').className   = 'result-severity ' + cls;
+  } catch(e) { alert('Prediction error: ' + e.message); }
+  finally {
     btn.disabled = false;
     btn.textContent = '▶ PREDICT';
+  }
+}
+
+// ── STRATEGY ──
+let strategyChart = null;
+
+function buildCurveBase() {
+  return {
+    Compound:         document.getElementById('s-compound').value,
+    TrackTemp:        +document.getElementById('s-track-temp').value,
+    AirTemp:          +document.getElementById('s-air-temp').value,
+    fuel_load_kg:     +document.getElementById('s-fuel').value,
+    Stint:            +document.getElementById('s-stint').value,
+    avg_throttle_pct: 62,
+    full_throttle_pct:55,
+    avg_brake:        0.18,
+    braking_pct:      12,
+    max_speed_kph:    315,
+    drs_active_pct:   18,
+    avg_rpm:          11200,
+    track_evolution:  300,
+    sector_1_pct:     0.28,
+    sector_2_pct:     0.38,
+    sector_3_pct:     0.34,
+    n_laps: +document.getElementById('s-stint-len').value,
+  };
+}
+
+async function generateCurve() {
+  const btn = document.getElementById('gen-curve-btn');
+  btn.disabled = true;
+  btn.textContent = 'GENERATING...';
+  document.getElementById('strategy-loading').style.display = 'flex';
+  document.getElementById('strategy-loading').textContent = 'GENERATING CURVE...';
+  document.getElementById('strategy-chart').style.display = 'none';
+  document.getElementById('strategy-result').style.display = 'none';
+  try {
+    const body = buildCurveBase();
+    const d = await fetch('/predict/curve', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
+    }).then(r => r.json());
+    renderStrategyChart(d.predictions, 'LightGBM Degradation Curve');
+  } catch(e) { alert('Error: ' + e.message); }
+  finally {
+    btn.disabled = false;
+    btn.textContent = '▶ GENERATE CURVE';
+  }
+}
+
+async function generateLSTMCurve() {
+  const btn = document.getElementById('lstm-curve-btn');
+  btn.disabled = true;
+  btn.textContent = 'FORECASTING...';
+  document.getElementById('strategy-loading').style.display = 'flex';
+  document.getElementById('strategy-loading').textContent = 'RUNNING LSTM FORECAST...';
+  document.getElementById('strategy-chart').style.display = 'none';
+  document.getElementById('strategy-result').style.display = 'none';
+
+  const n      = +document.getElementById('s-stint-len').value;
+  const base   = buildCurveBase();
+  const fuel0  = base.fuel_load_kg;
+  const stint  = base.Stint;
+  const cmpMap = {SOFT:3, MEDIUM:2, HARD:0, INTERMEDIATE:1, WET:4, UNKNOWN:2};
+
+  const laps = Array.from({length: n}, (_, i) => ({
+    stint_lap_number:  i,
+    compound_encoded:  cmpMap[base.Compound] ?? 2,
+    fuel_load_kg:      Math.max(0, fuel0 - i * 1.88),
+    TrackTemp:         base.TrackTemp,
+    AirTemp:           base.AirTemp,
+    track_evolution:   300 + i * 20,
+    avg_throttle_pct:  base.avg_throttle_pct,
+    full_throttle_pct: base.full_throttle_pct,
+    avg_brake:         base.avg_brake,
+    braking_pct:       base.braking_pct,
+    max_speed_kph:     base.max_speed_kph,
+    drs_active_pct:    base.drs_active_pct,
+    avg_rpm:           base.avg_rpm,
+    sector_1_pct:      base.sector_1_pct,
+    sector_2_pct:      base.sector_2_pct,
+    sector_3_pct:      base.sector_3_pct,
+  }));
+
+  try {
+    const d = await fetch('/predict/lstm', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({laps}),
+    }).then(r => r.json());
+    renderStrategyChart(d.predictions, 'LSTM Degradation Forecast');
+  } catch(e) { alert('LSTM error: ' + e.message); }
+  finally {
+    btn.disabled = false;
+    btn.textContent = '◈ LSTM FORECAST';
+  }
+}
+
+function renderStrategyChart(predictions, curveLabel) {
+  const pitLoss = +document.getElementById('s-pit-loss').value;
+  const n       = predictions.length;
+  const labels  = Array.from({length: n}, (_, i) => i + 1);
+
+  // For each lap P, how much additional deg you'd accumulate by staying to end
+  const remainingDeg = predictions.map((_, p) =>
+    Math.max(0, predictions[n - 1] - predictions[p])
+  );
+  const netSaving = remainingDeg.map(r => r - pitLoss);
+
+  // Pit window: laps where pitting saves net time
+  const winLaps = labels.filter((_, p) => netSaving[p] > 0);
+  const pitOpen  = winLaps.length > 0 ? winLaps[0]                    : null;
+  const pitClose = winLaps.length > 0 ? winLaps[winLaps.length - 1]   : null;
+  const maxSaving = winLaps.length > 0 ? Math.max(...netSaving.filter(v => v > 0)) : 0;
+
+  // Pit-cost reference line
+  const pitLine = labels.map(() => pitLoss);
+
+  const canvas = document.getElementById('strategy-chart');
+  document.getElementById('strategy-loading').style.display = 'none';
+  canvas.style.display = 'block';
+
+  if (strategyChart) strategyChart.destroy();
+
+  // Shade pit window using afterDraw plugin
+  const pitWindowPlugin = {
+    id: 'pitWindow',
+    afterDraw(chart) {
+      if (!pitOpen || !pitClose) return;
+      const {ctx, chartArea, scales} = chart;
+      const x0 = scales.x.getPixelForValue(pitOpen  - 0.5);
+      const x1 = scales.x.getPixelForValue(pitClose + 0.5);
+      ctx.save();
+      ctx.fillStyle = 'rgba(232, 0, 45, 0.08)';
+      ctx.fillRect(x0, chartArea.top, x1 - x0, chartArea.height);
+      ctx.strokeStyle = 'rgba(232, 0, 45, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(x0, chartArea.top); ctx.lineTo(x0, chartArea.bottom); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1, chartArea.top); ctx.lineTo(x1, chartArea.bottom); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  strategyChart = new Chart(canvas, {
+    type: 'line',
+    plugins: [pitWindowPlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          label: curveLabel,
+          data: predictions,
+          borderColor: '#448aff',
+          backgroundColor: 'rgba(68,138,255,0.08)',
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.3,
+          fill: false,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Remaining Degradation',
+          data: remainingDeg,
+          borderColor: '#ff6b00',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          borderDash: [6, 3],
+          fill: false,
+          yAxisID: 'y',
+        },
+        {
+          label: `Pit Cost (${pitLoss}s)`,
+          data: pitLine,
+          borderColor: 'rgba(232,0,45,0.5)',
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          pointRadius: 0,
+          borderDash: [3, 3],
+          fill: false,
+          yAxisID: 'y',
+        },
+      ],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(3)}s`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ...CHART_DEFAULTS.scales.x,
+          title: { display: true, text: 'STINT LAP', color: '#555', font: { family: 'Courier New', size: 10 } },
+        },
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          title: { display: true, text: 'SECONDS', color: '#555', font: { family: 'Courier New', size: 10 } },
+        },
+      },
+    },
+  });
+
+  // Badge + summary
+  const result  = document.getElementById('strategy-result');
+  const badge   = document.getElementById('strategy-badge');
+  const summary = document.getElementById('strategy-summary');
+  result.style.display = 'flex';
+
+  const lastDeg = predictions[n - 1];
+
+  if (!pitOpen) {
+    badge.textContent  = 'STAY OUT';
+    badge.className    = 'strategy-badge stay';
+    summary.innerHTML  =
+      `<b>Total projected degradation: ${lastDeg.toFixed(3)}s.</b> ` +
+      `Future tyre deg (${lastDeg.toFixed(3)}s) is less than the pit stop time loss (${pitLoss}s). ` +
+      `Staying on this tyre is faster for this stint length.`;
+  } else {
+    badge.textContent = `PIT WINDOW: LAP ${pitOpen}–${pitClose}`;
+    badge.className   = 'strategy-badge soon';
+    summary.innerHTML =
+      `<b>Pit on lap ${pitOpen} to maximise net time saved.</b> ` +
+      `Remaining degradation exceeds the pit cost (${pitLoss}s) between laps ${pitOpen}–${pitClose}. ` +
+      `Maximum net saving: <b>${maxSaving.toFixed(3)}s</b>. ` +
+      `Total projected stint degradation: ${lastDeg.toFixed(3)}s.`;
   }
 }
 
@@ -741,16 +1194,10 @@ let degChart      = null;
 
 async function loadFilters() {
   filtersLoaded = true;
-  const r = await fetch('/data/filters');
-  const d = await r.json();
-
+  const d = await fetch('/data/filters').then(r => r.json());
   const fill = (id, arr) => {
     const sel = document.getElementById(id);
-    arr.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = v;
-      sel.appendChild(o);
-    });
+    arr.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
   };
   fill('f-year', d.years);
   fill('f-circuit', d.circuits);
@@ -762,67 +1209,54 @@ async function loadExplorer() {
   const loading = document.getElementById('chart-loading');
   loading.style.display = 'flex';
   loading.textContent = 'LOADING...';
-
   const params = new URLSearchParams();
-  const year = document.getElementById('f-year').value;
+  const year    = document.getElementById('f-year').value;
   const circuit = document.getElementById('f-circuit').value;
-  const driver = document.getElementById('f-driver').value;
-  const compound = document.getElementById('f-compound').value;
+  const driver  = document.getElementById('f-driver').value;
+  const compound= document.getElementById('f-compound').value;
   if (year)     params.set('year', year);
   if (circuit)  params.set('circuit', circuit);
   if (driver)   params.set('driver', driver);
   if (compound) params.set('compound', compound);
-
   try {
-    const r = await fetch('/data/degradation?' + params.toString());
-    explorerData = await r.json();
+    explorerData = await fetch('/data/degradation?' + params).then(r => r.json());
     renderTable(explorerData);
     redrawChart();
-  } catch (e) {
-    loading.textContent = 'ERROR — ' + e.message;
-  }
+  } catch(e) { loading.textContent = 'ERROR — ' + e.message; }
 }
 
 function smooth(arr, k) {
   if (k === 0) return arr;
   return arr.map((_, i) => {
-    const slice = arr.slice(Math.max(0, i - k), i + k + 1);
-    return slice.reduce((a, b) => a + b, 0) / slice.length;
+    const s = arr.slice(Math.max(0, i - k), i + k + 1);
+    return s.reduce((a, b) => a + b, 0) / s.length;
   });
 }
 
 function redrawChart() {
   if (!explorerData.length) return;
-
-  const loading = document.getElementById('chart-loading');
-  const canvas  = document.getElementById('deg-chart');
+  const loading  = document.getElementById('chart-loading');
+  const canvas   = document.getElementById('deg-chart');
   loading.style.display = 'none';
-  canvas.style.display = 'block';
-
+  canvas.style.display  = 'block';
   const yKey      = document.getElementById('ctrl-y').value;
   const chartType = document.getElementById('ctrl-type').value;
   const smoothK   = +document.getElementById('ctrl-smooth').value;
   const ptSize    = +document.getElementById('ctrl-point-size').value;
   const showPts   = document.getElementById('ctrl-show-points').checked;
-
-  // Group by driver
   const groups = {};
   explorerData.forEach(row => {
     const key = row.Driver + (row.Compound ? ' (' + row.Compound + ')' : '');
     if (!groups[key]) groups[key] = [];
     groups[key].push({ x: row.stint_lap_number, y: row[yKey] });
   });
-
   const datasets = Object.entries(groups).map(([label, pts], i) => {
     pts.sort((a, b) => a.x - b.x);
-    const ys = smooth(pts.map(p => p.y), smoothK);
-    const data = pts.map((p, j) => ({ x: p.x, y: ys[j] }));
+    const ys  = smooth(pts.map(p => p.y), smoothK);
     const col = PALETTE[i % PALETTE.length];
     return {
-      label,
-      data,
-      borderColor: col,
-      backgroundColor: col + '33',
+      label, data: pts.map((p, j) => ({ x: p.x, y: ys[j] })),
+      borderColor: col, backgroundColor: col + '33',
       borderWidth: 1.5,
       pointRadius: showPts ? ptSize : 0,
       pointHoverRadius: ptSize + 2,
@@ -830,58 +1264,22 @@ function redrawChart() {
       fill: false,
     };
   });
-
   if (degChart) degChart.destroy();
   degChart = new Chart(canvas, {
     type: chartType === 'scatter' ? 'scatter' : 'line',
     data: { datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 300 },
+      ...CHART_DEFAULTS,
       plugins: {
-        legend: {
-          labels: {
-            color: '#888',
-            font: { family: 'Courier New', size: 11 },
-            boxWidth: 12,
-          },
-        },
+        ...CHART_DEFAULTS.plugins,
         tooltip: {
-          backgroundColor: '#111',
-          borderColor: '#333',
-          borderWidth: 1,
-          titleColor: '#e8002d',
-          bodyColor: '#ccc',
-          titleFont: { family: 'Courier New', size: 11 },
-          bodyFont: { family: 'Courier New', size: 11 },
-          callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(3) : '—'}`,
-          },
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(3) : '—'}` },
         },
       },
       scales: {
-        x: {
-          type: 'linear',
-          title: {
-            display: true,
-            text: 'STINT LAP NUMBER',
-            color: '#555',
-            font: { family: 'Courier New', size: 10, letterSpacing: '2px' },
-          },
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#555', font: { family: 'Courier New', size: 11 } },
-        },
-        y: {
-          title: {
-            display: true,
-            text: yKey.replace(/_/g, ' ').toUpperCase(),
-            color: '#555',
-            font: { family: 'Courier New', size: 10 },
-          },
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#555', font: { family: 'Courier New', size: 11 } },
-        },
+        x: { ...CHART_DEFAULTS.scales.x, title: { display:true, text:'STINT LAP NUMBER', color:'#555', font:{family:'Courier New',size:10} } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display:true, text: yKey.replace(/_/g,' ').toUpperCase(), color:'#555', font:{family:'Courier New',size:10} } },
       },
     },
   });
@@ -890,7 +1288,7 @@ function redrawChart() {
 function renderTable(data) {
   const tbody = document.getElementById('explorer-table');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted);padding:20px;text-align:center;letter-spacing:2px;">NO DATA</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted);padding:20px;text-align:center;letter-spacing:2px;font-family:var(--mono);">NO DATA</td></tr>';
     return;
   }
   tbody.innerHTML = data.slice(0, 500).map(r => {
@@ -899,15 +1297,15 @@ function renderTable(data) {
     const sign  = delta > 0 ? '+' : '';
     const cpd   = r.Compound || '';
     return `<tr>
-      <td>${r.Driver || '—'}</td>
-      <td>${r.EventName || '—'}</td>
-      <td>${r.Year || '—'}</td>
+      <td>${r.Driver||'—'}</td>
+      <td>${r.EventName||'—'}</td>
+      <td>${r.Year||'—'}</td>
       <td><span class="cpd cpd-${cpd}">${cpd}</span></td>
-      <td class="num">${r.Stint ?? '—'}</td>
-      <td class="num">${r.stint_lap_number ?? '—'}</td>
-      <td class="num">${r.TyreLife ?? '—'}</td>
-      <td class="num ${dcls}">${delta != null ? sign + delta.toFixed(3) + 's' : '—'}</td>
-      <td class="num">${r.TrackTemp != null ? r.TrackTemp.toFixed(1) + '°' : '—'}</td>
+      <td class="num">${r.Stint??'—'}</td>
+      <td class="num">${r.stint_lap_number??'—'}</td>
+      <td class="num">${r.TyreLife??'—'}</td>
+      <td class="num ${dcls}">${delta!=null?sign+delta.toFixed(3)+'s':'—'}</td>
+      <td class="num">${r.TrackTemp!=null?r.TrackTemp.toFixed(1)+'°':'—'}</td>
     </tr>`;
   }).join('');
 }

@@ -246,6 +246,47 @@ def build(fastf1_pattern: str = "*.parquet", telemetry_pattern: str = "*.parquet
     return laps
 
 
+# ---------------------------------------------------------------------------
+# LSTM sequence builder
+# ---------------------------------------------------------------------------
+
+def build_stint_sequences(
+    df: pd.DataFrame,
+    feature_cols: list[str],
+    target_col: str = "lap_time_delta_fuel_corrected",
+    augment: bool = False,
+) -> list[dict]:
+    """
+    Reshape a lap-level feature table into per-stint sequences for LSTM training.
+
+    Returns list of {"X": np.ndarray(L, F), "y": np.ndarray(L,), "meta": dict}.
+
+    augment=True creates subsequences [lap 1..2], [lap 1..3], ..., [lap 1..L]
+    per stint — multiplies training samples ~10× without data leakage.
+    augment=False returns one full sequence per stint (for val/test).
+    """
+    available = [c for c in feature_cols if c in df.columns]
+    sequences: list[dict] = []
+    group_cols = ["Year", "RoundNumber", "Driver", "Stint"]
+
+    for key, grp in df.groupby(group_cols, sort=False):
+        grp = grp.sort_values("stint_lap_number").dropna(subset=[target_col])
+        if len(grp) < 2:
+            continue
+
+        X_full = grp[available].to_numpy(dtype=np.float32)
+        y_full = grp[target_col].to_numpy(dtype=np.float32)
+        meta = dict(zip(group_cols, key))
+
+        if augment:
+            for end in range(2, len(grp) + 1):
+                sequences.append({"X": X_full[:end], "y": y_full[:end], "meta": meta})
+        else:
+            sequences.append({"X": X_full, "y": y_full, "meta": meta})
+
+    return sequences
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", action="store_true", help="Run on 2023 R01 only")
