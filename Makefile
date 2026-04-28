@@ -1,4 +1,4 @@
-.PHONY: setup ingest ingest-test telemetry telemetry-test features features-test train train-test serve all
+.PHONY: setup ingest ingest-test telemetry telemetry-test features features-test train train-test train-lstm train-lstm-test serve all
 
 setup:
 	python -m venv .venv
@@ -33,6 +33,12 @@ train:
 
 train-test:
 	.venv/bin/python -m src.models.train_degradation --test
+
+train-lstm:
+	.venv/bin/python -m src.models.train_lstm
+
+train-lstm-test:
+	.venv/bin/python -m src.models.train_lstm --test
 
 # --- API ---
 
