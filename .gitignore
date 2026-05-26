@@ -29,5 +29,9 @@ f1/
 # OS
 .DS_Store
 
+# C++ embedded layer — build artifacts
+embedded/build/
+benchmark_results.json
+
 # Claude Code local settings
 .claude/settings.local.json

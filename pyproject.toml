@@ -25,6 +25,7 @@ dependencies = [
     "tqdm>=4.66",
     "polars>=0.20",
     "torch>=2.2",
+    "paho-mqtt>=1.6",
 ]
 
 [tool.setuptools.packages.find]

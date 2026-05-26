@@ -1,4 +1,4 @@
-.PHONY: setup ingest ingest-test telemetry telemetry-test features features-test train train-test train-lstm train-lstm-test serve all
+.PHONY: setup ingest ingest-test telemetry telemetry-test features features-test train train-test train-lstm train-lstm-test serve all embedded bench mqtt-bridge
 
 setup:
 	python -m venv .venv
@@ -44,6 +44,18 @@ train-lstm-test:
 
 serve:
 	.venv/bin/uvicorn src.api.main:app --reload --port 8000
+
+# --- Embedded C++ layer (CAN bus / RTOS / MQTT) ---
+
+embedded:                          ## Build C++ embedded core
+	cmake -S embedded -B embedded/build -DCMAKE_BUILD_TYPE=Release -Wno-dev
+	cmake --build embedded/build --parallel
+
+bench: embedded                    ## WCET benchmark (baseline vs. ring-buffer-decoupled)
+	./embedded/build/benchmark
+
+mqtt-bridge:                       ## Python MQTT→FastAPI bridge (needs broker + serve)
+	.venv/bin/python embedded/scripts/mqtt_consumer.py
 
 # --- Full pipeline ---
 
