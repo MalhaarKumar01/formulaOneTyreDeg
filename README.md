@@ -112,6 +112,7 @@ make mqtt-bridge
 
 ![SHAP Feature Importance](metrics/shap_importance.png)
 ![Residuals by Compound](metrics/residuals_by_compound.png)
+Oh look a boxplot.
 ![Predicted vs Actual](metrics/predicted_vs_actual.png)
 
 ## Setup
